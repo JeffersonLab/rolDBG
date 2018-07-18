@@ -28,15 +28,94 @@ extern void rocEnd();
 extern void rocTrigger(int arg);
 extern void rocCleanup();
 
+void rolDBGTrigger(int arg);
+
 extern int tiA32Base;
 
 DMA_MEM_ID vmeIN,vmeOUT;
 extern DMANODE *the_event;
 extern unsigned int *dma_dabufp;
 
-volatile struct TI_A24RegStruct  *TIp=NULL;
+/* volatile struct TI_A24RegStruct  *TIp=NULL; */
 int tsLiveCalc = 0;
 void tsLiveFunc() {}
+
+int
+rolDBGDownload()
+{
+  int stat;
+
+  /* remexSetCmsgServer("dafarm28"); */
+  /* remexInit(NULL,1); */
+
+  vmeOpenDefaultWindows();
+
+  /* INIT dmaPList */
+
+  dmaPFreeAll();
+  vmeIN  = dmaPCreate("vmeIN",1024,4,0);
+  vmeOUT = dmaPCreate("vmeOUT",0,0,0);
+
+  dmaPStatsAll();
+
+  dmaPReInitAll();
+
+  tiA32Base=0x08000000;
+  tiSetFiberLatencyOffset_preInit(0x20);
+
+  tiInit(0,TI_READOUT_EXT_POLL,TI_INIT_SKIP_FIRMWARE_CHECK);
+
+  tiCheckAddresses();
+
+  rocDownload();
+
+  tiDisableVXSSignals();
+
+  tiClockReset();
+  taskDelay(2);
+  tiTrigLinkReset();
+
+  return OK;
+}
+
+int
+rolDBGPrestart()
+{
+  tiIntConnect(TI_INT_VEC, rolDBGTrigger,0);
+
+  rocPrestart();
+
+  printf("%s: Sending sync as TI master\n",__FUNCTION__);
+  sleep(1);
+  tiSyncReset(1);
+  taskDelay(2);
+
+  return OK;
+}
+
+int
+rolDBGGo()
+{
+  rocGo();
+
+  tiIntEnable(1);
+
+  return OK;
+}
+
+int
+rolDBGEnd()
+{
+  tiDisableTriggerSource(1);
+
+  tiIntDisable();
+  tiIntDisconnect();
+
+
+  rocEnd();
+
+  return OK;
+}
 
 void
 rolDBGTrigger(int arg)
@@ -80,69 +159,21 @@ rolDBGTrigger(int arg)
 
 
 int
-rolDBGDownload()
-{
-  int stat;
-
-  /* remexSetCmsgServer("dafarm28"); */
-  /* remexInit(NULL,1); */
-
-  vmeOpenDefaultWindows();
-
-  /* INIT dmaPList */
-
-  dmaPFreeAll();
-  vmeIN  = dmaPCreate("vmeIN",1024,4,0);
-  vmeOUT = dmaPCreate("vmeOUT",0,0,0);
-
-  dmaPStatsAll();
-
-  dmaPReInitAll();
-
-  tiA32Base=0x08000000;
-  tiSetFiberLatencyOffset_preInit(0x20);
-
-  tiInit(0,TI_READOUT_EXT_POLL,TI_INIT_SKIP_FIRMWARE_CHECK);
-
-  tiCheckAddresses();
-
-  rocDownload();
-
-  return OK;
-}
-
-int
-rolDBGPrestart()
-{
-
-  return OK;
-}
-
-int
-rolDBGGo()
-{
-
-  return OK;
-}
-
-int
-rolDBGEnd()
-{
-
-  return OK;
-}
-
-int
 rolDBGCleanup()
 {
-
+  rocCleanup();
   return OK;
 }
 
 int
 main(int argc, char *argv[])
 {
-  printf("I'm just fine\n");
+  rolDBGDownload();
+  rolDBGPrestart();
+  rolDBGGo();
+  rolDBGEnd();
+
+
   exit(OK);
 }
 
