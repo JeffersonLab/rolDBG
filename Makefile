@@ -16,7 +16,8 @@ AR                      = ar
 RANLIB                  = ranlib
 CFLAGS			= -Wall -g \
 				-I. -I${LINUXVME_INC} \
-				-L. -L${LINUXVME_LIB}
+				-L. -L${LINUXVME_LIB} \
+				-L${CODA_LIB} -lvme_list
 
 PROGS			=
 
@@ -30,3 +31,10 @@ clean distclean:
 	$(CC) $(CFLAGS) -o $@ $(@:%=%.c) -lrt -ljvme -lti
 
 .PHONY: all clean distclean
+
+
+#
+#  Local Variables:
+#  compile-command: "make -k -B rolDBG"
+#  End:
+#

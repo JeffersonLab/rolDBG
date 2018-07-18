@@ -16,6 +16,11 @@
 #include "tiLib.h"
 /* #include "remexLib.h" */
 
+void daLogMsg(){};
+int bigendian_out;
+void partCreate(){};
+void end(){};
+
 extern void rocDownload();
 extern void rocPrestart();
 extern void rocGo();
@@ -28,6 +33,10 @@ extern int tiA32Base;
 DMA_MEM_ID vmeIN,vmeOUT;
 extern DMANODE *the_event;
 extern unsigned int *dma_dabufp;
+
+volatile struct TI_A24RegStruct  *TIp=NULL;
+int tsLiveCalc = 0;
+void tsLiveFunc() {}
 
 void
 rolDBGTrigger(int arg)
@@ -133,7 +142,8 @@ rolDBGCleanup()
 int
 main(int argc, char *argv[])
 {
-  return OK;
+  printf("I'm just fine\n");
+  exit(OK);
 }
 
 /*
