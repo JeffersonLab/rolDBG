@@ -98,7 +98,12 @@ rolDBGGo()
 {
   rocGo();
 
+  tiSetTriggerSource(TI_TRIGGER_PULSER);
+
   tiIntEnable(1);
+  tiStatus(1);
+
+  tiSetRandomTrigger(1,0x7);
 
   return OK;
 }
@@ -107,6 +112,7 @@ int
 rolDBGEnd()
 {
   tiDisableTriggerSource(1);
+  tiDisableRandomTrigger();
 
   tiIntDisable();
   tiIntDisconnect();
@@ -153,6 +159,7 @@ rolDBGTrigger(int arg)
 
   PUTEVENT(vmeOUT);
 
+  outEvent = dmaPGetItem(vmeOUT);
   dmaPFreeItem(outEvent);
 
 }
@@ -168,9 +175,20 @@ rolDBGCleanup()
 int
 main(int argc, char *argv[])
 {
+  printf("<Enter> to Download\n");
+  getchar();
   rolDBGDownload();
+
+  printf("<Enter> to Prestart\n");
+  getchar();
   rolDBGPrestart();
+
+  printf("<Enter> to Go\n");
+  getchar();
   rolDBGGo();
+
+  printf("<Enter> to End\n");
+  getchar();
   rolDBGEnd();
 
 
