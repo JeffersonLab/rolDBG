@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "jvme.h"
-#include "tiLib.h"
+#include "c965Lib.h"
 /* #include "remexLib.h" */
 
 void daLogMsg(){};
@@ -30,7 +30,8 @@ extern void rocCleanup();
 
 void rolDBGTrigger(int arg);
 
-extern int tiA32Base;
+extern UINT32 c965IntLevel;
+extern UINT32 c965IntVec;
 
 DMA_MEM_ID vmeIN,vmeOUT;
 extern DMANODE *the_event;
@@ -60,20 +61,7 @@ rolDBGDownload()
 
   dmaPReInitAll();
 
-  tiA32Base=0x08000000;
-  tiSetFiberLatencyOffset_preInit(0x20);
-
-  tiInit(0,TI_READOUT_EXT_POLL,TI_INIT_SKIP_FIRMWARE_CHECK);
-
-  tiCheckAddresses();
-
   rocDownload();
-
-  tiDisableVXSSignals();
-
-  tiClockReset();
-  taskDelay(2);
-  tiTrigLinkReset();
 
   return OK;
 }
@@ -81,14 +69,16 @@ rolDBGDownload()
 int
 rolDBGPrestart()
 {
-  tiIntConnect(TI_INT_VEC, rolDBGTrigger,0);
+  if(vmeIntDisconnect(c965IntLevel) != OK)
+    {
+      printf("ERROR disconnecting Interrupt\n");
+    }
+  if(vmeIntConnect(c965IntVec,c965IntLevel,rolDBGTrigger,1) != OK)
+    {
+      printf("ERROR in intConnect()\n");
+    }
 
   rocPrestart();
-
-  printf("%s: Sending sync as TI master\n",__FUNCTION__);
-  sleep(1);
-  tiSyncReset(1);
-  taskDelay(2);
 
   return OK;
 }
@@ -98,25 +88,12 @@ rolDBGGo()
 {
   rocGo();
 
-  tiSetTriggerSource(TI_TRIGGER_PULSER);
-
-  tiIntEnable(1);
-  tiStatus(1);
-
-  tiSetRandomTrigger(1,0x7);
-
   return OK;
 }
 
 int
 rolDBGEnd()
 {
-  tiDisableTriggerSource(1);
-  tiDisableRandomTrigger();
-
-  tiIntDisable();
-  tiIntDisconnect();
-
 
   rocEnd();
 
@@ -135,25 +112,6 @@ rolDBGTrigger(int arg)
   unsigned int intCount = 0;
 
   GETEVENT(vmeIN, intCount);
-
-  tibready = tiBReady();
-  if(tibready==ERROR)
-    {
-      printf("%s: ERROR: tiIntPoll returned ERROR.\n",__FUNCTION__);
-      return;
-    }
-  if(tibready==0 && timeout<100)
-    {
-      printf("NOT READY!\n");
-      tibready=tiBReady();
-      timeout++;
-    }
-
-  if(timeout>=100)
-    {
-      printf("TIMEOUT!\n");
-      return;
-    }
 
   rocTrigger(intCount);
 

@@ -17,7 +17,7 @@ RANLIB                  = ranlib
 CFLAGS			= -Wall -g \
 				-I. -I${LINUXVME_INC} \
 				-L. -L${LINUXVME_LIB} \
-				-L${CODA_LIB} -lvme_list
+				-L${CODA_LIB} -lc965_trig_list
 
 PROGS			=
 
@@ -28,7 +28,7 @@ clean distclean:
 
 %: %.c
 	echo "Making $@"
-	$(CC) $(CFLAGS) -o $@ $(@:%=%.c) -lrt -ljvme -lti
+	$(CC) $(CFLAGS) -o $@ $(@:%=%.c) -lrt -ljvme -lc965
 
 .PHONY: all clean distclean
 
